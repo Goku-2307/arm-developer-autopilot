@@ -1,0 +1,11 @@
+.venv/
+
+__pycache__/
+
+*.pyc
+
+reports/
+
+optimized_models/
+
+.vscode/
