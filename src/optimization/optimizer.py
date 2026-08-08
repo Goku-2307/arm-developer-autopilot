@@ -1,28 +1,98 @@
-from pathlib import Path
+import os
+import shutil
 
-from onnxruntime.quantization import quantize_dynamic, QuantType
+from onnxruntime.quantization import (
+    quantize_dynamic,
+    QuantType
+)
 
 
 class ModelOptimizer:
+    """
+    Optimizes AI models for ARM CPUs.
 
-    def __init__(self, input_model):
+    Current Support
+    ----------------
+    • FP32 (Original)
+    • INT8 Dynamic Quantization
+    """
 
-        self.input_model = input_model
+    def __init__(self, model_path):
 
-    def quantize(self):
+        self.model_path = model_path
 
-        output_dir = Path("optimized_models")
+        self.output_dir = "optimized_models"
 
-        output_dir.mkdir(exist_ok=True)
+        os.makedirs(self.output_dir, exist_ok=True)
 
-        output_model = output_dir / (
-        Path(self.input_model).stem + "_int8.onnx"
-   )
+    def optimize(self, quantization="FP32"):
 
-        quantize_dynamic (
-            model_input=self.input_model,
-            model_output=str(output_model),
-            weight_type=QuantType.QInt8,
+        quantization = quantization.upper()
+
+        if quantization == "FP32":
+
+            return self.copy_original()
+
+        elif quantization == "INT8":
+
+            return self.quantize_int8()
+
+        raise ValueError(f"Unsupported quantization: {quantization}")
+
+    def copy_original(self):
+
+        filename = os.path.basename(self.model_path)
+
+        destination = os.path.join(
+            self.output_dir,
+            filename
         )
 
-        return str(output_model)
+        shutil.copy2(
+            self.model_path,
+            destination
+        )
+
+        return {
+
+            "optimized_model": destination,
+
+            "quantization": "FP32",
+
+            "optimized": False
+
+        }
+
+    def quantize_int8(self):
+
+        filename = os.path.basename(self.model_path)
+
+        name = os.path.splitext(filename)[0]
+
+        output_model = os.path.join(
+
+            self.output_dir,
+
+            name + "_int8.onnx"
+
+        )
+
+        quantize_dynamic(
+
+            model_input=self.model_path,
+
+            model_output=output_model,
+
+            weight_type=QuantType.QInt8
+
+        )
+
+        return {
+
+            "optimized_model": output_model,
+
+            "quantization": "INT8",
+
+            "optimized": True
+
+        }

@@ -23,3 +23,5 @@ requests
 PyGithub
 
 reportlab
+
+jinja2

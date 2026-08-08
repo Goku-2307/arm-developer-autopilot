@@ -1,63 +1,97 @@
+import os
 import time
+
 import psutil
 import numpy as np
 import onnxruntime as ort
 
 
 class Benchmark:
+    """
+    Benchmarks an ONNX model.
 
-    def __init__(self, model_path):
+    Returns:
+        - Latency
+        - Memory Usage
+        - Model Size
+    """
+
+    def __init__(self, model_path, threads=1):
 
         self.model_path = model_path
+        self.threads = threads
 
     def benchmark(self):
 
-        session = ort.InferenceSession(self.model_path)
+        options = ort.SessionOptions()
 
-        input_name = session.get_inputs()[0].name
+        options.intra_op_num_threads = self.threads
+        options.inter_op_num_threads = 1
 
-        input_shape = session.get_inputs()[0].shape
+        session = ort.InferenceSession(
+            self.model_path,
+            sess_options=options,
+            providers=["CPUExecutionProvider"]
+        )
+
+        input_info = session.get_inputs()[0]
 
         shape = []
 
-        for dim in input_shape:
+        for dim in input_info.shape:
 
             if isinstance(dim, int):
-
                 shape.append(dim)
-
             else:
-
                 shape.append(1)
 
-        dummy_input = np.random.rand(*shape).astype(np.float32)
+        input_data = np.random.rand(*shape).astype(np.float32)
 
         process = psutil.Process()
 
-        memory_before = process.memory_info().rss
+        memory_before = process.memory_info().rss / (1024 * 1024)
 
-        cpu_before = psutil.cpu_percent()
+        # Warmup
+        for _ in range(2):
+            session.run(
+                None,
+                {input_info.name: input_data}
+            )
 
-        start = time.perf_counter()
+        runs = []
 
-        session.run(None, {input_name: dummy_input})
+        for _ in range(5):
 
-        end = time.perf_counter()
+            start = time.perf_counter()
 
-        cpu_after = psutil.cpu_percent()
+            session.run(
+                None,
+                {input_info.name: input_data}
+            )
 
-        memory_after = process.memory_info().rss
+            end = time.perf_counter()
 
-        latency = (end - start) * 1000
+            runs.append((end - start) * 1000)
 
-        memory_used = (memory_after - memory_before) / 1024 / 1024
+        memory_after = process.memory_info().rss / (1024 * 1024)
+
+        latency = round(float(np.mean(runs)), 2)
+
+        memory = round(memory_after - memory_before, 2)
+
+        model_size = round(
+            os.path.getsize(self.model_path) / (1024 * 1024),
+            2
+        )
 
         return {
 
-            "latency": round(latency, 2),
+            "latency": latency,
 
-            "memory": round(memory_used, 2),
+            "memory": memory,
 
-            "cpu": cpu_after
+            "model_size": model_size,
+
+            "threads": self.threads
 
         }

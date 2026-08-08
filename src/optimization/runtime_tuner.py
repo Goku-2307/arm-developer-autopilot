@@ -1,79 +1,97 @@
-import time
-import numpy as np
-import onnxruntime as ort
+import multiprocessing
+
+from src.optimization.benchmark import Benchmark
 
 
 class RuntimeTuner:
+    """
+    Finds the optimal CPU thread configuration
+    for ONNX Runtime inference.
+    """
 
     def __init__(self, model_path):
 
         self.model_path = model_path
 
-    def benchmark(self, threads):
+        self.cpu_count = multiprocessing.cpu_count()
 
-        options = ort.SessionOptions()
+    def candidate_threads(self):
 
-        options.intra_op_num_threads = threads
+        candidates = []
 
-        session = ort.InferenceSession(
-            self.model_path,
-            sess_options=options
+        if self.cpu_count >= 1:
+            candidates.append(1)
+
+        if self.cpu_count >= 2:
+            candidates.append(2)
+
+        if self.cpu_count >= 4:
+            candidates.append(4)
+
+        if self.cpu_count >= 6:
+            candidates.append(6)
+
+        if self.cpu_count >= 8:
+            candidates.append(8)
+
+        if self.cpu_count >= 12:
+            candidates.append(12)
+
+        if self.cpu_count >= 16:
+            candidates.append(16)
+
+        return candidates
+
+    def tune(self):
+
+        print("\n" + "=" * 60)
+        print("ARM Runtime Thread Tuning")
+        print("=" * 60)
+
+        results = []
+
+        for threads in self.candidate_threads():
+
+            print(f"\nTesting {threads} Thread(s)...")
+
+            benchmark = Benchmark(
+
+                self.model_path,
+
+                threads=threads
+
+            )
+
+            metrics = benchmark.benchmark()
+
+            metrics["threads"] = threads
+
+            results.append(metrics)
+
+            print(f"Latency : {metrics['latency']} ms")
+            print(f"Memory  : {metrics['memory']} MB")
+
+        best = min(
+
+            results,
+
+            key=lambda x: x["latency"]
+
         )
 
-        input_name = session.get_inputs()[0].name
+        print("\n" + "=" * 60)
+        print("BEST THREAD CONFIGURATION")
+        print("=" * 60)
 
-        input_shape = session.get_inputs()[0].shape
+        print(f"Threads : {best['threads']}")
+        print(f"Latency : {best['latency']} ms")
 
-        shape = []
+        return {
 
-        for dim in input_shape:
+            "best_threads": best["threads"],
 
-            if isinstance(dim, int):
+            "best_latency": best["latency"],
 
-                shape.append(dim)
+            "results": results
 
-            else:
-
-                shape.append(1)
-
-        dummy = np.random.rand(*shape).astype(np.float32)
-
-        # Warm-up
-        for _ in range(10):
-            session.run(None, {input_name: dummy})
-
-        times = []
-
-        for _ in range(50):
-
-            start = time.perf_counter()
-
-            session.run(None, {input_name: dummy})
-
-            end = time.perf_counter()
-
-            times.append((end - start) * 1000)
-
-        return np.mean(times)
-
-    def find_best_threads(self):
-
-        candidates = [1, 2, 4, 8]
-
-        results = {}
-
-        for t in candidates:
-
-            try:
-
-                latency = self.benchmark(t)
-
-                results[t] = latency
-
-            except Exception:
-
-                pass
-
-        best = min(results, key=results.get)
-
-        return best, results
+        }
