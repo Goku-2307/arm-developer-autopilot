@@ -2,7 +2,7 @@
 
 AI model optimization for ARM CPU deployment.
 
-Generated: 11-08-2026 08:05:15
+Generated: 11-08-2026 08:11:06
 
 ## Project
 
@@ -16,12 +16,12 @@ Generated: 11-08-2026 08:05:15
 |---|---|
 | Quantization | INT8 |
 | Threads | 4 |
-| Graph Optimization | EXTENDED |
+| Graph Optimization | BASIC |
 | Execution Mode | PARALLEL |
-| Latency | 217.39 ms |
-| Memory | 20.15 MB |
+| Latency | 219.63 ms |
+| Memory | 20.22 MB |
 | Model Size | 3.43 MB |
-| Score | 24.97 |
+| Score | 24.96 |
 
 ## Features
 
