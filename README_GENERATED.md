@@ -2,7 +2,7 @@
 
 AI model optimization for ARM CPU deployment.
 
-Generated: 11-08-2026 14:49:58
+Generated: 12-08-2026 20:04:30
 
 ## Project
 
@@ -18,10 +18,10 @@ Generated: 11-08-2026 14:49:58
 | Threads | 4 |
 | Graph Optimization | BASIC |
 | Execution Mode | PARALLEL |
-| Latency | 218.45 ms |
-| Memory | 20.11 MB |
+| Latency | 112.42 ms |
+| Memory | 20.28 MB |
 | Model Size | 3.43 MB |
-| Score | 24.97 |
+| Score | 25.18 |
 
 ## Features
 
