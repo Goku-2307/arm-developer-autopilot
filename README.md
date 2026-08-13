@@ -19,8 +19,7 @@ The system analyzes a project, detects AI models, generates optimization candida
 Analyze → Optimize → Benchmark → Recommend → Deploy
 
 ---
-
-## Key Features
+Key Features
 
 - Automatic project analysis
 - AI model detection
