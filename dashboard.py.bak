@@ -50,15 +50,10 @@ st.sidebar.title("🚀 ARM Developer AutoPilot")
 st.sidebar.caption("ARM CPU AI Optimization Platform")
 st.sidebar.markdown("---")
 
-# Resolve project path relative to this file's directory
-PROJECT_ROOT = Path(__file__).parent.resolve()
-default_project = PROJECT_ROOT / "examples/sample_ai_project"
-
-project_path_input = st.sidebar.text_input(
+project_path = st.sidebar.text_input(
     "Project to Analyze",
-    value=str(default_project),
+    value="examples/sample_ai_project",
 )
-project_path = Path(project_path_input).resolve()
 
 if st.sidebar.button("🚀 Start Optimization", use_container_width=True, type="primary"):
     st.session_state.reports = None
@@ -209,32 +204,21 @@ st.subheader("📜 Optimization Timeline")
 # Build timeline from session events
 events = getattr(session, "events", []) or []
 
-if events:
-    # Use real events from the session - display them in order
-    progress_items = events[:12]  # Show max 12 stages
-    for event in progress_items:
-        status_emoji = {
-            "SUCCESS": "✅",
-            "FAILED": "❌",
-            "running": "⏳",
-            "pending": "○",
-        }.get(event.get("status", "pending"), "○")
-        duration = event.get("duration", "")
-        duration_str = f" ({duration}s)" if duration else ""
-        st.caption(f"{event.get('time', '')} {event.get('status', '?')}{duration_str} | {event.get('stage', '?')}: {event.get('message', '-')}")
-else:
-    # No events yet - display default pipeline stages matching user request
+# Add default stages if no events
+if not events:
     stages = [
-        ("Hardware Analysis", "SUCCESS" if hw_check.get("is_arm", False) else "FAILED"),
-        ("ARM Verification", "SUCCESS" if hw_check.get("supported", False) else "FAILED"),
-        ("Project Analysis", "SUCCESS" if session and session.project_name else "FAILED"),
-        ("AI Model Detection", "SUCCESS" if session and session.models else "FAILED"),
+        ("Hardware Analysis", "SUCCESS" if hw_verification["is_arm"] else "FAILED"),
+        ("ARM Verification", "SUCCESS" if hw_verification["supported"] else "FAILED"),
+        ("Project Analysis", "SUCCESS" if session.project_name else "FAILED"),
+        ("AI Model Detection", "SUCCESS" if session.models else "FAILED"),
         ("Baseline Benchmark", "pending"),
         ("Candidate Generation", "pending"),
         ("Optimization", "pending"),
-        ("Candidate Ranking", "pending"),
-        ("Report Generation", "pending"),
-        ("GitHub Publishing", "pending"),
+        ("Candidate Benchmarking", "pending"),
+        ("Ranking", "pending"),
+        ("Best Configuration", "pending"),
+        ("Deployment", "pending"),
+        ("Verification", "pending"),
     ]
     for i, (stage, status) in enumerate(stages):
         time_str = f"{(i * 10):02d}:00:01"
@@ -244,15 +228,21 @@ else:
             "stage": stage,
             "message": f"{stage} {'completed' if status == 'SUCCESS' else 'in progress'}",
         })
-    progress_items = events[:12]
-    for event in progress_items:
-        status_emoji = {
-            "SUCCESS": "✅",
-            "FAILED": "❌",
-            "running": "⏳",
-            "pending": "○",
-        }.get(event.get("status", "pending"), "○")
-        st.caption(f"{event.get('time', '')} {event.get('status', '?')} | {event.get('stage', '?')}")
+else:
+    # Update progress for completed events
+    for event in events:
+        if event.get("status") in ["pending", "running"]:
+            event["status"] = "running"
+
+progress_items = events[:12]  # Show max 12 stages
+for event in progress_items:
+    status_emoji = {
+        "SUCCESS": "✅",
+        "FAILED": "❌",
+        "running": "⏳",
+        "pending": "○",
+    }.get(event.get("status", "pending"), "○")
+    st.caption(f"{event.get('time', '')} {event.get('status', '?')} | {event.get('stage', '?')}")
 
 
 # --------------------------------------------------
@@ -356,10 +346,10 @@ if best:
         comp = BenchmarkComparator.compare(
             baseline,
             {
-                "latency_mean_ms": best.get("latency_mean_ms", "-"),
-                "memory_mb": best.get("memory_mb", best.get("memory", "-")),
-                "model_size_mb": best.get("model_size_mb", best.get("model_size", "-")),
-                "throughput_fps": best.get("throughput_fps", best.get("throughput", "-")),
+                "latency_mean_ms": best.get("latency"),
+                "memory": best.get("memory"),
+                "model_size_mb": best.get("model_size"),
+                "throughput_fps": best.get("score"),
             }
         )
 
@@ -384,7 +374,7 @@ if session.benchmark_results and len(session.benchmark_results) > 0 and best:
 
     # Calculate improvements
     baseline_lat = baseline.get("latency_mean_ms", 0)
-    opt_lat = best.get("latency_mean_ms")
+    opt_lat = best.get("latency")
 
     c1, c2, c3 = st.columns(3)
 
@@ -396,8 +386,8 @@ if session.benchmark_results and len(session.benchmark_results) > 0 and best:
             st.metric("Latency", "-", "-")
 
     with c2:
-        baseline_mem = baseline.get("memory_mb", 0)
-        opt_mem = best.get("memory_mb")
+        baseline_mem = baseline.get("memory", 0)
+        opt_mem = best.get("memory")
         if baseline_mem > 0 and opt_mem and opt_mem > 0:
             imp = round(((baseline_mem - opt_mem) / baseline_mem) * 100, 2)
             st.metric("Memory", f"↓ {imp}%", f"{opt_mem} MB vs {baseline_mem} MB")
@@ -415,7 +405,7 @@ if session.benchmark_results and len(session.benchmark_results) > 0 and best:
 
     # Throughput
     baseline_tp = baseline.get("throughput_fps", 0)
-    opt_tp = best.get("throughput_fps")
+    opt_tp = best.get("score")  # score can represent throughput
     if baseline_tp > 0 and opt_tp and opt_tp > 0:
         imp = round(((opt_tp - baseline_tp) / baseline_tp) * 100, 2)
         st.metric("Throughput", f"↑ {imp}%", f"{opt_tp} FPS vs {baseline_tp} FPS")
