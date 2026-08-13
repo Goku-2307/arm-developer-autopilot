@@ -1,4 +1,7 @@
+streamlit
 onnx
 onnxruntime
 numpy
-opencv-python
+psutil
+reportlab
+requests
