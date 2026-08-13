@@ -1,0 +1,10 @@
+{
+  "baseline": null,
+  "optimized": {
+    "latency_ms": null,
+    "memory_mb": null,
+    "model_size_mb": null,
+    "throughput_fps": null
+  },
+  "improvements": {}
+}
