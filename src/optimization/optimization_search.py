@@ -64,22 +64,30 @@ class OptimizationSearch:
 
         for candidate in candidates:
 
-            c_id = candidate.get("candidate_id", "?")
+            # Support both Candidate dataclass and dict formats
+            if hasattr(candidate, 'get'):
+                c_id = candidate.get("candidate_id", "?")
+            else:
+                c_id = candidate.candidate_id
 
             print(f"\nRunning Candidate {c_id}")
 
+            # Support both Candidate dataclass and dict formats
+            def _get(cand, key, default="?"):
+                return cand.get(key, default) if hasattr(cand, 'get') else getattr(cand, key, default)
+
             result = {
-                "candidate_id": candidate.get("candidate_id", "?"),
-                "quantization": candidate.get("quantization", "?"),
-                "graph_optimization": candidate.get("graph_optimization", "?"),
-                "execution_mode": candidate.get("execution_mode", "?"),
-                "threads": candidate.get("threads", 1),
+                "candidate_id": _get(candidate, "candidate_id", "?"),
+                "quantization": _get(candidate, "quantization", "?"),
+                "graph_optimization": _get(candidate, "graph_optimization", "?"),
+                "execution_mode": _get(candidate, "execution_mode", "?"),
+                "threads": _get(candidate, "threads", 1),
                 "status": "SUCCESS",
                 "error": None,
             }
 
             # Select the appropriate optimized model based on quantization
-            if candidate.get("quantization") == "FP32":
+            if _get(candidate, "quantization", "FP32") == "FP32":
                 model = fp32_model
             else:
                 model = int8_model
@@ -104,19 +112,15 @@ class OptimizationSearch:
 
             try:
                 benchmark = Benchmark(model_path_str,
-                                      threads=candidate.get("threads", 1))
+                                      threads=_get(candidate, "threads", 1))
 
                 benchmark_result = benchmark.benchmark()
 
                 # Attach candidate metadata
-                benchmark_result["candidate_id"] = candidate.get("candidate_id", "?")
-                benchmark_result["quantization"] = candidate.get("quantization", "?")
-                benchmark_result["graph_optimization"] = candidate.get(
-                    "graph_optimization", "?"
-                )
-                benchmark_result["execution_mode"] = candidate.get(
-                    "execution_mode", "?"
-                )
+                benchmark_result["candidate_id"] = _get(candidate, "candidate_id", "?")
+                benchmark_result["quantization"] = _get(candidate, "quantization", "?")
+                benchmark_result["graph_optimization"] = _get(candidate, "graph_optimization", "?")
+                benchmark_result["execution_mode"] = _get(candidate, "execution_mode", "?")
 
                 result.update(benchmark_result)
                 results.append(result)

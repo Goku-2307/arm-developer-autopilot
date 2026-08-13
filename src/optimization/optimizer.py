@@ -1,5 +1,6 @@
 import os
 import shutil
+from pathlib import Path
 
 from onnxruntime.quantization import (
     quantize_dynamic,
@@ -18,11 +19,9 @@ class ModelOptimizer:
     """
 
     def __init__(self, model_path):
-
-        self.model_path = model_path
-
-        self.output_dir = "optimized_models"
-
+        self.model_path = str(Path(model_path).resolve())
+        model_dir = os.path.dirname(self.model_path)
+        self.output_dir = os.path.join(model_dir, "optimized_models")
         os.makedirs(self.output_dir, exist_ok=True)
 
     def optimize(self, quantization="FP32"):
@@ -55,7 +54,7 @@ class ModelOptimizer:
 
         return {
 
-            "optimized_model": destination,
+            "optimized_model": os.path.abspath(destination),
 
             "quantization": "FP32",
 
@@ -89,7 +88,7 @@ class ModelOptimizer:
 
         return {
 
-            "optimized_model": output_model,
+            "optimized_model": os.path.abspath(output_model),
 
             "quantization": "INT8",
 
