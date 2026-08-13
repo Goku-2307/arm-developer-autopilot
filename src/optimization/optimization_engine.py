@@ -68,9 +68,10 @@ class OptimizationEngine:
         print(f"Threads            : {best['threads']}")
         print(f"Graph Optimization : {best['graph_optimization']}")
         print(f"Execution Mode     : {best['execution_mode']}")
-        print(f"Latency            : {best['latency']} ms")
-        print(f"Memory             : {best['memory']} MB")
-        print(f"Model Size         : {best['model_size']} MB")
+        print(f"Latency            : {best.get('latency_mean_ms', best.get('latency', '-'))} ms")
+        print(f"Memory             : {best.get('memory', best.get('memory_mb', '-'))} MB")
+        print(f"Model Size         : {best.get('model_size_mb', best.get('model_size', '-'))} MB")
+        print(f"Throughput         : {best.get('throughput_fps', best.get('throughput', '-'))} FPS")
         print(f"Score              : {best['score']}")
 
         return {

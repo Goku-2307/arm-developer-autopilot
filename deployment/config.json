@@ -1,0 +1,19 @@
+{
+  "device": {
+    "architecture": "x86_64",
+    "cpu": "11th Gen Intel(R) Core(TM) i7-1165G7 @ 2.80GHz",
+    "cores": 1,
+    "threads": 1,
+    "ram_total_mb": 15722,
+    "is_arm": false
+  },
+  "optimization": {
+    "quantization": "FP32",
+    "graph_optimization": "BASIC",
+    "execution_mode": "PARALLEL"
+  },
+  "benchmark": {
+    "warmup_iterations": 10,
+    "benchmark_iterations": 50
+  }
+}
